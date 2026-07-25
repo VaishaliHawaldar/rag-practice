@@ -1,0 +1,17 @@
+MongoDB Schema Design
+
+Unlike relational databases, MongoDB doesn't enforce a fixed schema by default — documents in the same collection can technically have different fields. This flexibility is powerful but shifts more responsibility onto the application developer to design schemas intentionally, rather than relying on the database engine to enforce structure.
+
+The central design tension in MongoDB modeling is embedding versus referencing.
+
+Embedding means storing related data inside the same document as a nested object or array. For example, storing a customer's shipping addresses as an array inside the customer document itself. Embedding is favored when the related data is almost always read together with the parent, when the related data doesn't grow unboundedly, and when you want atomic updates across the parent and child data in a single write.
+
+Referencing means storing an ID that points to a document in another collection, similar to a foreign key in a relational database, and using $lookup or separate queries to join the data when needed. Referencing is favored when the related data is large, grows without bound (e.g., an ever-growing list of orders for a customer), is frequently updated independently of the parent, or is shared across many parent documents.
+
+A common anti-pattern is "unbounded arrays" — embedding an array that can grow indefinitely (like a comments array in a blog post) directly inside the parent document. As it grows, the document can approach MongoDB's 16MB document size limit and every update to the array requires rewriting the whole document. A common fix is to move the array's contents into a separate collection referencing the parent's ID instead.
+
+Another common pattern is denormalization — deliberately duplicating small, rarely-changing pieces of data across documents to avoid extra joins on read. For example, storing a product's name alongside its ID in an order document, since the name is unlikely to change and avoids needing a lookup just to display an order history. This trades some write complexity (you may need to update duplicated data in multiple places if it changes) for significantly faster and simpler reads.
+
+Schema design in MongoDB is generally driven by the application's query patterns rather than by normalized data theory: the standard advice is to model your data around how it will be read and written, not around minimizing duplication. This is often summarized as "data that is accessed together should be stored together."
+
+MongoDB does support optional schema validation via JSON Schema rules attached to a collection, which can enforce required fields, types, and value constraints even though the database doesn't require a fixed schema by default. This is commonly used to get some of the safety of a rigid schema while retaining flexibility for optional or evolving fields.

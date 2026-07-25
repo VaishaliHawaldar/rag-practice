@@ -1,0 +1,17 @@
+MongoDB Transactions
+
+A transaction lets you group multiple operations together so that they either all succeed or all fail as a single unit, preserving consistency even if something goes wrong partway through. This is the same idea as ACID transactions in relational databases.
+
+Single-document operations in MongoDB are always atomic by default, even without explicitly starting a transaction — an update that changes several fields in one document either applies completely or not at all. This covers a large share of use cases without needing multi-document transactions at all, since embedding related data in one document (see schema design) sidesteps the need for a transaction across multiple documents.
+
+Multi-document transactions become necessary when an operation must atomically touch multiple documents, potentially across multiple collections or even multiple databases. A classic example is a funds transfer: debiting one account document and crediting another must either both succeed or both fail, since a partial failure would leave the books unbalanced.
+
+To use a transaction, you start a session, begin the transaction on that session, perform your operations tied to that session, and then either commit or abort the transaction. If any operation fails, the whole transaction can be aborted and none of the changes take effect.
+
+Multi-document transactions require a replica set or sharded cluster deployment (not a standalone server), since they rely on the underlying replication and consistency machinery MongoDB uses for its oplog.
+
+Performance considerations: transactions hold locks on the documents involved for their duration, and long-running transactions can increase contention and impact throughput, especially under high write load. MongoDB recommends keeping transactions short — ideally completing in under a second — and avoiding unnecessary reads or slow external calls inside a transaction's scope.
+
+There is also a default transaction time limit (60 seconds by default) after which an in-progress transaction is automatically aborted, to prevent long-held locks from degrading overall cluster performance.
+
+A useful design principle: reach for multi-document transactions only when embedding or denormalization genuinely cannot avoid the need for cross-document atomicity. Overusing transactions where a well-designed single-document update would suffice adds unnecessary overhead and complexity.

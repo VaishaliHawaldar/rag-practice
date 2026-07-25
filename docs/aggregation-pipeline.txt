@@ -1,0 +1,25 @@
+MongoDB Aggregation Pipeline
+
+The aggregation pipeline is MongoDB's framework for transforming and analyzing data across a collection. It works by passing documents through a sequence of stages, where each stage takes the output of the previous stage as its input. This is conceptually similar to piping commands together in a Unix shell, except the "data" flowing through is a stream of JSON-like documents.
+
+Each stage performs one specific operation. Common stages include:
+
+$match: Filters documents, similar to a WHERE clause in SQL. It's best practice to place $match stages as early as possible in the pipeline, since this reduces the number of documents that later stages need to process, improving performance.
+
+$group: Groups documents by a specified key and lets you compute aggregate values per group, such as sums, counts, or averages. This is roughly equivalent to GROUP BY in SQL.
+
+$project: Reshapes documents by including, excluding, or computing new fields. Useful for trimming down large documents before sending them further down the pipeline, or for calculating derived fields.
+
+$sort: Orders documents by one or more fields. Like $match, placing $sort early (when possible) can help performance, especially if an index supports the sort.
+
+$lookup: Performs a left outer join with another collection in the same database, letting you pull in related documents. This is MongoDB's answer to SQL joins, though it behaves differently under the hood since MongoDB isn't a relational engine.
+
+$unwind: Deconstructs an array field from the input documents, producing one output document per array element. This is often used before a $group stage when you need to aggregate over values nested inside arrays.
+
+$limit and $skip: Control pagination by capping the number of returned documents or skipping a number of documents.
+
+A pipeline is expressed as an array of stage objects, executed via db.collection.aggregate([...]). Since MongoDB 4.2, aggregation pipelines can also be used to perform updates (via updateOne/updateMany with a pipeline instead of a plain update document), which allows for more expressive updates like computing a new field from two existing fields in a single atomic operation.
+
+Performance considerations: Aggregation pipelines can be expensive on large collections if early stages don't reduce the document count. Indexes can be used by $match and $sort stages if they appear early enough in the pipeline, before the data has been reshaped by $project or $group. The explain() method can be used on an aggregation to see how MongoDB is executing each stage, which is useful for diagnosing slow pipelines.
+
+Pipelines also have a memory limit by default (100MB per stage), and stages that exceed this will fail unless you enable the allowDiskUse option, which lets MongoDB spill intermediate results to disk at the cost of some performance.

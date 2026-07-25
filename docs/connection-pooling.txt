@@ -1,0 +1,19 @@
+MongoDB Connection Pooling
+
+Opening a new network connection for every database operation is expensive — it involves a TCP handshake, and for secured deployments, TLS negotiation and authentication, all of which add latency. Connection pooling solves this by keeping a set of already-established connections open and reusing them across many operations, instead of opening and closing a connection each time.
+
+MongoDB's official drivers (including the Node.js and .NET drivers) maintain a connection pool automatically per application process. When your application creates a MongoClient (or equivalent), it doesn't open one connection — it manages a pool of connections that operations borrow from and return to as needed.
+
+Key pool settings:
+
+maxPoolSize: The maximum number of connections the pool will hold open at once. If all connections are in use and a new operation comes in, it waits until one frees up (up to a configurable wait timeout) rather than opening unlimited new connections. The default is commonly 100, but this should be tuned based on expected concurrent load and the database server's own connection limits.
+
+minPoolSize: The minimum number of connections the driver tries to keep open even when idle, so that a burst of traffic after a quiet period doesn't have to pay the cost of establishing new connections from zero.
+
+maxIdleTimeMS: How long an unused connection can sit idle in the pool before the driver closes it, freeing up resources when load is low.
+
+A common mistake in application code (especially serverless functions or scripts) is creating a new MongoClient for every request instead of reusing a single client across the application's lifetime. Since the client already manages its own pool internally, creating a new client repeatedly defeats the purpose of pooling and can quickly exhaust the database server's own maximum connection limit, causing connection errors under load.
+
+In serverless environments specifically (like AWS Lambda), a common pattern is to initialize the MongoDB client outside the request handler function, so that when the same execution environment is reused for subsequent invocations, the existing connection pool is reused rather than rebuilt — while acknowledging that cold starts will still need to establish a fresh pool.
+
+Monitoring pool health typically involves watching for connection pool exhaustion (operations timing out while waiting for an available connection) as a signal that maxPoolSize may be too low, or that connections are being held longer than necessary due to slow queries.

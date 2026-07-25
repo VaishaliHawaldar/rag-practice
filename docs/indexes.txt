@@ -1,0 +1,25 @@
+MongoDB Indexes
+
+An index in MongoDB is a data structure that stores a small, ordered slice of a collection's data, allowing queries to find matching documents without scanning every document (a "collection scan"). Without an appropriate index, MongoDB has to check every single document to find the ones matching your query, which becomes slow as collections grow.
+
+Every collection automatically gets a default index on the _id field, since _id must be unique and is used constantly for lookups.
+
+Common index types:
+
+Single field indexes: An index on one field, e.g. an index on "email" to speed up lookups by email address. You can specify ascending (1) or descending (-1) order, which matters mainly when combined with sort operations.
+
+Compound indexes: An index on multiple fields together, e.g. {status: 1, createdAt: -1}. Compound indexes follow a strict left-to-right prefix rule: a query can use the index efficiently only if it filters on a prefix of the indexed fields in order. This means an index on {a: 1, b: 1} can support queries filtering on "a" alone, or on "a and b" together, but not efficiently support a query that filters on "b" alone.
+
+Multikey indexes: Automatically created when you index a field that holds an array, allowing efficient queries against array contents.
+
+Text indexes: Support basic full-text search across string fields, letting you use the $text query operator. These are limited compared to dedicated search engines but useful for simple keyword search needs.
+
+Unique indexes: Enforce that no two documents can share the same value for the indexed field(s), commonly used for fields like email or username.
+
+TTL (time-to-live) indexes: Automatically delete documents after a specified amount of time has passed since a given timestamp field, commonly used for session data, logs, or temporary caches.
+
+Choosing indexes: A useful rule of thumb is the "ESR" rule for compound indexes — order fields as Equality matches first, then Sort fields, then Range filters. This tends to produce indexes that support the widest variety of query patterns efficiently.
+
+Costs of indexes: Every index speeds up reads that use it but slows down writes, since each insert, update, or delete must also update every index on the collection. Indexes also consume additional disk space and memory. Because of this, it's generally best practice to create only the indexes your actual query patterns need, and to periodically review indexes for ones that are unused (MongoDB's $indexStats can help identify these).
+
+The explain() method, run on a query or aggregation, shows whether MongoDB used an index (an "IXSCAN") or fell back to a full collection scan (a "COLLSCAN"), which is the primary diagnostic tool for index-related performance issues.

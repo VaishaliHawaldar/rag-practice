@@ -6,7 +6,7 @@ import voyageai
 
 CHUNK_SIZE = 300
 CHUNK_OVERLAP = 50
-VOYAGE_MODEL = "voyage-3-lite"
+VOYAGE_MODEL = "voyage-4-lite"
 COLLECTION_NAME = "mongodb_docs"
 
 
